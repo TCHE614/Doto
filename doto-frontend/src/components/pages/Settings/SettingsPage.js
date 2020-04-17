@@ -10,6 +10,7 @@ import DateFnsUtils from "@date-io/date-fns";
 import Header from "../Header";
 import DotoService from "../../../helpers/DotoService";
 import { ThemeContext } from "../../../context/ThemeContext";
+import { ActiveHoursContext } from "../../../context/ActiveHoursContext";
 import { Themes } from "../../../constants/Themes";
 import "./SettingsPage.css";
 import "../Pages.css";
@@ -60,16 +61,13 @@ const ProfilePhoto = props => {
 };
 
 // TODO: Implement logic for working hours in sync with task-scheduling algorithm
-const WorkingHoursPicker = () => {
-    const [selectedStartTime, setSelectedStartTime] = useState(new Date("2020-03-15T09:00:00"));
-    const [selectedEndTime, setSelectedEndTime] = useState(new Date("2020-03-15T17:00:00"));
-
+const WorkingHoursPicker = props => {
     const handleStartTimeChange = date => {
-        setSelectedStartTime(date);
+        props.changeStartTime(date);
     };
 
     const handleEndTimeChange = date => {
-        setSelectedEndTime(date);
+        props.changeEndTime(date);
     };
 
     return (
@@ -80,8 +78,8 @@ const WorkingHoursPicker = () => {
                     <KeyboardTimePicker
                         margin="normal"
                         label="Start Time"
-                        value={selectedStartTime}
                         onChange={handleStartTimeChange}
+                        value={props.startTime}
                         KeyboardButtonProps={{
                             "aria-label": "change time",
                         }}
@@ -94,8 +92,8 @@ const WorkingHoursPicker = () => {
                     <KeyboardTimePicker
                         margin="normal"
                         label="End Time"
-                        value={selectedEndTime}
                         onChange={handleEndTimeChange}
+                        value={props.endTime}
                         KeyboardButtonProps={{
                             "aria-label": "change time",
                         }}
@@ -131,9 +129,12 @@ const ThemePicker = props => {
 
 const SettingsPage = () => {
     const [theme, setTheme] = useContext(ThemeContext);
+    const { activeHoursStart, activeHoursEnd } = useContext(ActiveHoursContext);
     const [profilePic, setProfilePic] = useState();
     const [name, setName] = useState();
     const [email, setEmail] = useState();
+    const [startTime, setStartTime] = activeHoursStart;
+    const [endTime, setEndTime] = activeHoursEnd;
 
     useEffect(() => {
         const fetchUserInfo = async () => {
@@ -142,6 +143,8 @@ const SettingsPage = () => {
             setProfilePic(userInfo.picture);
             setName(userInfo.name);
             setEmail(userInfo.email);
+            setStartTime(userInfo.startTime);
+            setEndTime(userInfo.endTime);
         };
         fetchUserInfo();
     });
@@ -151,12 +154,22 @@ const SettingsPage = () => {
         setTheme(newTheme);
     };
 
+    const changeStartTime = newTime => {
+        DotoService.updateUserInfo(theme, newTime, endTime);
+        setStartTime(newTime);
+    };
+
+    const changeEndTime = newTime => {
+        DotoService.updateUserInfo(theme, startTime, newTime);
+        setEndTime(newTime);
+    };
+
     return (
         <div className="page-layout">
             <div
                 className={classnames(
                     "left-side-bar",
-                    theme === Themes.DARK ? "left-side-bg-blue" : "left-side-bg-green"
+                    theme === Themes.DARK ? "left-side-bg-blue" : "left-side-bg-green",
                 )}
             />
             <span className="content-container">
@@ -172,7 +185,12 @@ const SettingsPage = () => {
                     <InputEmailField email={email} />
 
                     <ThemePicker changeTheme={changeTheme} />
-                    <WorkingHoursPicker />
+                    <WorkingHoursPicker
+                        startTime={startTime}
+                        endTime={endTime}
+                        changeStartTime={changeStartTime}
+                        changeEndTime={changeEndTime}
+                    />
                 </div>
             </span>
         </div>

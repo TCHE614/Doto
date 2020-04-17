@@ -13,12 +13,12 @@ import CalendarComponent from "./CalendarComponent";
 import CalendarListView from "./CalendarListView";
 import Header from "../Header";
 import { ThemeContext } from "../../../context/ThemeContext";
+import { ActiveHoursContext } from "../../../context/ActiveHoursContext";
 import { addTaskToSchedule } from "./TaskScheduler";
 import DotoService from "../../../helpers/DotoService";
 import "./Calendar.css";
 import "../Pages.css";
 import { Themes } from "../../../constants/Themes";
-
 
 const classnames = require("classnames");
 
@@ -44,6 +44,9 @@ const Calendar = () => {
     const [tasks, setTasks] = useState([]);
     const [open, setOpen] = useState(false);
     const [theme, setTheme] = useContext(ThemeContext);
+    const { activeHoursStart, activeHoursEnd } = useContext(ActiveHoursContext);
+    const [startTime, setStartTime] = activeHoursStart;
+    const [endTime, setEndTime] = activeHoursEnd;
 
     const handleOpen = () => {
         setOpen(true);
@@ -61,14 +64,22 @@ const Calendar = () => {
         const fetchUserInfo = async () => {
             const userInfo = await DotoService.getUserInfo();
             setTheme(userInfo.themePreference);
+            setStartTime(userInfo.startTime);
+            setEndTime(userInfo.endTime);
         };
         fetchUserInfo();
         fetchTasks();
-    }, [setTheme]);
+    }, [setTheme, setStartTime, setEndTime]);
 
     // Adds new task based on input fields from Modal
     const addNewTask = (newTask, currentDate) => {
-        const { newTaskOrder, updatedTask } = addTaskToSchedule(newTask, tasks, currentDate);
+        const { newTaskOrder, updatedTask } = addTaskToSchedule(
+            newTask,
+            tasks,
+            currentDate,
+            new Date(startTime),
+            new Date(endTime),
+        );
         setTasks(newTaskOrder);
         handleClose();
 
@@ -78,7 +89,7 @@ const Calendar = () => {
     const deleteTask = async taskId => {
         const taskList = [...tasks];
         const index = taskList.findIndex(task => task.taskId === taskId);
-        taskList.splice(index,1);
+        taskList.splice(index, 1);
         setTasks(taskList);
 
         await DotoService.deleteTask(taskId);
@@ -122,7 +133,11 @@ const Calendar = () => {
                 <Header title="Calendar" />
                 <div className="flex">
                     <div className="calendar-component">
-                        <CalendarComponent tasks={tasks} onTaskDeleted={deleteTask} onTaskStatusUpdated={handleTaskStatusUpdated} />
+                        <CalendarComponent
+                            tasks={tasks}
+                            onTaskDeleted={deleteTask}
+                            onTaskStatusUpdated={handleTaskStatusUpdated}
+                        />
                     </div>
                     {listView && <CalendarListView tasks={tasks} onTaskStatusUpdated={handleTaskStatusUpdated} />}
                 </div>

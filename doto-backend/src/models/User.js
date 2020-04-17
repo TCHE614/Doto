@@ -20,6 +20,14 @@ const userschema = mongoose.Schema({
         type: String,
         default: "dark",
     },
+    startTime: {
+        type: Date,
+        default: "2020-03-15T09:00:00",
+    },
+    endTime: {
+        type: Date,
+        default: "2020-03-15T17:00:00",
+    },
 });
 
 userschema.plugin(uniqueValidator);

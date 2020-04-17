@@ -6,6 +6,7 @@ import Calendar from "../components/pages/Calendar/Calendar";
 import NotFound from "../components/pages/NotFound";
 import { ThemeContext } from "../context/ThemeContext";
 import CookieManager from "../helpers/CookieManager";
+import { ActiveHoursContext } from "../context/ActiveHoursContext";
 import "../tailwind-generated.css";
 import PrivateRoute from "../helpers/PrivateRoute";
 import DotoService from "../helpers/DotoService";
@@ -65,6 +66,8 @@ const setupReminders = async params => {
 // Sets the routing to the appropriate pages, passing in the colour theme based on user setting
 const Routes = () => {
     const [theme, setTheme] = React.useState(true);
+    const [activeHourStartTime, setActiveHourStartTime] = React.useState(new Date("2020-03-15T09:00:00"));
+    const [activeHourEndTime, setActiveHourEndTime] = React.useState(new Date("2020-03-15T17:00:00"));
     // Only when backend returns JWT and email then we save
     const params = extractEmailAndJwt(window.location.href);
     saveToCookies(params);
@@ -74,8 +77,26 @@ const Routes = () => {
             <Route exact path="/" component={Login} />
             <Route path="/login" component={Login} />
             <ThemeContext.Provider value={[theme, setTheme]}>
-                <PrivateRoute path="/calendar" exact component={Calendar}/>
-                <PrivateRoute path="/settings" exact component={SettingsPage}/>
+                <PrivateRoute path="/calendar" exact component={Calendar}>
+                    <ActiveHoursContext.Provider
+                        value={{
+                            activeHoursStart: [activeHourStartTime, setActiveHourStartTime],
+                            activeHoursEnd: [activeHourEndTime, setActiveHourEndTime],
+                        }}
+                    >
+                        <Calendar />
+                    </ActiveHoursContext.Provider>
+                </PrivateRoute>
+                <PrivateRoute path="/settings" exact component={SettingsPage}>
+                    <ActiveHoursContext.Provider
+                        value={{
+                            activeHoursStart: [activeHourStartTime, setActiveHourStartTime],
+                            activeHoursEnd: [activeHourEndTime, setActiveHourEndTime],
+                        }}
+                    >
+                        <SettingsPage />
+                    </ActiveHoursContext.Provider>
+                </PrivateRoute>
                 <Route component={NotFound} />
             </ThemeContext.Provider>
         </Switch>
